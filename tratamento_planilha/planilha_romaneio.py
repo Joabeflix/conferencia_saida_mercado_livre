@@ -4,6 +4,7 @@ from tkinter import filedialog, Tk
 
 
 
+
 class TratamentoPlanilhaMercadoLivre:
     def __init__(self, nome_aba_cod_rastreiro, nome_aba_nome_cliente):
         self.nome_aba_cod_rastreiro = nome_aba_cod_rastreiro
@@ -35,11 +36,13 @@ class TratamentoPlanilhaMercadoLivre:
             if cod_rastreio == ' ':
                 continue
             dicionario[self._acertar_codigo(cod_rastreio)] = {'nome_cliente': nome_cliente, 'status_conferencia': False}
- 
         return dicionario
     
     def _acertar_codigo(self, codigo):
         return codigo[3:14]
+    
+    def retornar_local_planilha(self):
+        return f'{self.planilha_usar}'
     
     def definir_planilha(self):
 

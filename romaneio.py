@@ -2,7 +2,11 @@ import os
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from tkinter import StringVar
-from utilitarios.tratamento_planilha_romaneio import TratamentoPlanilhaMercadoLivre
+from tratamento_planilha.planilha_romaneio import TratamentoPlanilhaMercadoLivre
+from tratamento_planilha.gerar_relatorio import gerar_relatorio_exel
+from utils.variaveis_json import *
+from servico_email.servico_de_email import Email
+
 
 class ConferenciaApp:
     def __init__(self, root):
@@ -13,6 +17,10 @@ class ConferenciaApp:
         self.label_atual_log_y = 560
         self.label_atual_log_x = 20
         self.qtd_log = 0
+
+        self.local_planilha_meli = None
+        self.lista_confirmados_gerar_relatorio = []
+        self.lista_todos_gerar_relatorio = []
 
         self.dados = self.carregar_dados()
 
@@ -38,6 +46,8 @@ class ConferenciaApp:
 
         self.botao = ttk.Button(root, text="Conferir", bootstyle='success-outline', command=self.conferir_codigo)
         self.botao.place(x=320, y=446)
+        self.gerar_relatorio = ttk.Button(root, text="Relatório Email", bootstyle='success-outline', command=self.enviar_relatorio_email)
+        self.gerar_relatorio.place(x=460, y=446)
 
         self.label_mensagem = ttk.Label(root, text="", font=("Segoe UI", 10), foreground="blue")
         self.label_mensagem.place(x=390, y=446)
@@ -49,10 +59,15 @@ class ConferenciaApp:
 
     def carregar_dados(self):
         app = TratamentoPlanilhaMercadoLivre(
-            nome_aba_cod_rastreiro='Número de rastreamento',
-            nome_aba_nome_cliente='Dados pessoais ou da empresa'
-        )
-        return app._criar_dicionario()
+            nome_aba_cod_rastreiro=COLUNA_COD_RASTREIO,
+            nome_aba_nome_cliente=COLUNA_NOME_CLIENTE)
+        dicionario = app._criar_dicionario()
+        
+        self.local_planilha_meli = app.retornar_local_planilha()
+
+        return dicionario
+    
+
 
     def atualizar_lista(self):
         self.lista_pendentes.delete("1.0", "end")
@@ -61,11 +76,13 @@ class ConferenciaApp:
         for codigo, info in self.dados.items():
 
             if not info["status_conferencia"]:
-                status = "⏳ PENDENTE"
-                self.lista_pendentes.insert("end", f"{codigo} - {info['nome_cliente']}\n")
+                text = f"{codigo} - {info['nome_cliente']}\n"
+                self.lista_pendentes.insert("end", text)
+
             else:
-                status = "✅ CONFIRMADO"
-                self.lista_confirmados.insert("end", f"{codigo} - {info['nome_cliente']}\n")
+                text = f"{codigo} - {info['nome_cliente']}\n"
+                self.lista_confirmados.insert("end", text)
+
 
     def conferir_codigo(self, event=None):
         codigo = self.codigo_var.get().strip()
@@ -76,6 +93,7 @@ class ConferenciaApp:
             if not self.dados[codigo]["status_conferencia"]:
                 self.dados[codigo]["status_conferencia"] = True
                 self.mensagem(f"✅ {codigo} conferido com sucesso!", "green")
+                self.lista_confirmados_gerar_relatorio.append([codigo, self.dados[codigo]["nome_cliente"]])
       
             else:
                 self.mensagem(f"⚠️ {codigo} já foi conferido anteriormente.", "yellow")
@@ -111,11 +129,22 @@ class ConferenciaApp:
             self.qtd_log = 0
             self.label_atual_log_y = 560
 
-
-
-
+    def enviar_relatorio_email(self):
+        gerar_relatorio_exel(rf'{self.local_planilha_meli}', nome_aba='Confirmados', dados=self.lista_confirmados_gerar_relatorio)
+        email = Email(
+            remetente=REMETENTE
+        )
+        email.definir_senha(SENHA_DE_APP_EMAIL)
+        email.enviar(
+            assunto="Relatório pedidos confirmados",
+            mensagem=f'Segue no anexo os pedidos confirmados.',
+            destinatarios=DESTINATARIOS,
+            anexos=[rf'{self.local_planilha_meli}']
+        )
 
 if __name__ == "__main__":
-    root = ttk.Window(themename="vapor")
+    root = ttk.Window(themename=TEMA_PROGRAMA)
     app = ConferenciaApp(root)
     root.mainloop()
+
+    
