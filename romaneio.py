@@ -6,6 +6,8 @@ from tratamento_planilha.planilha_romaneio import TratamentoPlanilhaMercadoLivre
 from tratamento_planilha.gerar_relatorio import gerar_relatorio_exel
 from utils.variaveis_json import *
 from servico_email.servico_de_email import Email
+from datetime import datetime
+import os
 
 
 class ConferenciaApp:
@@ -18,6 +20,8 @@ class ConferenciaApp:
         self.label_atual_log_x = 20
         self.qtd_log = 0
 
+        self.contagem_confirmado = 1
+
         self.local_planilha_meli = None
         self.lista_confirmados_gerar_relatorio = []
         self.lista_todos_gerar_relatorio = []
@@ -29,6 +33,9 @@ class ConferenciaApp:
 
         self.label_log = ttk.Label(root, text="✅ CONFIRMADOS", font=("Segoe UI", 20, "bold"), foreground="green")
         self.label_log.place(x=747, y=10)
+
+        self.label_qtd_confirmada = ttk.Label(root, text="", font=("Segoe UI", 20), foreground="green")
+        self.label_qtd_confirmada.place(x=1000, y=10)
 
         self.lista_pendentes = ttk.Text(root, width=80, height=20, font=("Segoe UI", 10))
         self.lista_pendentes.place(x=20, y=65)
@@ -44,16 +51,26 @@ class ConferenciaApp:
         self.entry_codigo.place(x=20, y=445)
         self.entry_codigo.bind("<Return>", self.conferir_codigo)
 
-        self.botao = ttk.Button(root, text="Conferir", bootstyle='success-outline', command=self.conferir_codigo)
-        self.botao.place(x=320, y=446)
-        self.gerar_relatorio = ttk.Button(root, text="Relatório Email", bootstyle='success-outline', command=self.enviar_relatorio_email)
-        self.gerar_relatorio.place(x=460, y=446)
+        self.botao_conferir = ttk.Button(root, text="Conferir", bootstyle='success-outline', command=self.conferir_codigo)
+        self.botao_conferir.place(x=320, y=446)
+
+        self.label_observacao_email = ttk.Label(root, text="Observação Email", font=("Segoe UI", 10), foreground="green")
+        self.label_observacao_email.place(x=827, y=423)
+
+        self.entrada_observacao_email = ttk.Entry(root, width=40)
+        self.entrada_observacao_email.place(x=827, y=445)
+        self.gerar_relatorio = ttk.Button(root, text="Enviar Email", bootstyle='success-outline', command=self.enviar_relatorio_email)
+        self.gerar_relatorio.place(x=1086, y=445)
 
         self.label_mensagem = ttk.Label(root, text="", font=("Segoe UI", 10), foreground="blue")
         self.label_mensagem.place(x=390, y=446)
 
         self.label_log = ttk.Label(root, text="LOG", font=("Segoe UI", 15), foreground="pink")
         self.label_log.place(x=20, y=520)
+
+
+        # self.label_qtd_faltando = ttk.Label(root, text="", font=("Segoe UI", 10), foreground="blue")
+        # self.label_qtd_faltando.place()
 
         self.atualizar_lista()
 
@@ -94,6 +111,8 @@ class ConferenciaApp:
                 self.dados[codigo]["status_conferencia"] = True
                 self.mensagem(f"✅ {codigo} conferido com sucesso!", "green")
                 self.lista_confirmados_gerar_relatorio.append([codigo, self.dados[codigo]["nome_cliente"]])
+                self.label_qtd_confirmada.config(text=f'{self.contagem_confirmado}')
+                self.contagem_confirmado+=1
       
             else:
                 self.mensagem(f"⚠️ {codigo} já foi conferido anteriormente.", "yellow")
@@ -135,9 +154,29 @@ class ConferenciaApp:
             remetente=REMETENTE
         )
         email.definir_senha(SENHA_DE_APP_EMAIL)
+
+
+        data_hora = datetime.now()
+
+        data_hora_formatada = data_hora.strftime("%d-%m-%Y %H:%M:%S")
+
+        observacao = self.entrada_observacao_email.get().strip()
+
+        mensagem = f"""
+        Lista de pedidos confirmados no Mercado Livre.\n
+        DATA E HORA DO ENVIO: {data_hora_formatada}\n\n\n
+
+        {f'Observação:\n{observacao}' if observacao  else 'Sem observações.'}
+        
+        ------------------------------------------------------------
+        USUÁRIO: {os.environ['USERNAME']}
+        NOME DO COMPUTADOR: {os.environ['COMPUTERNAME']}
+        ------------------------------------------------------------
+        """
+
         email.enviar(
             assunto="Relatório pedidos confirmados",
-            mensagem=f'Segue no anexo os pedidos confirmados.',
+            mensagem=mensagem,
             destinatarios=DESTINATARIOS,
             anexos=[rf'{self.local_planilha_meli}']
         )
