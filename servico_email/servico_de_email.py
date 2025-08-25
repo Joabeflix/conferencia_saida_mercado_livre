@@ -1,11 +1,9 @@
+import os
 import smtplib
 from email.mime.text import MIMEText
+from utils.utils import texto_no_console
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
-from datetime import datetime
-import os
-import socket
-from utils.utils import texto_no_console
 
 class Email:
     def __init__(self, remetente: str) -> None:
