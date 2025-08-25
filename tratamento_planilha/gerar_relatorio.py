@@ -1,7 +1,7 @@
 import pandas as pd
 from openpyxl import load_workbook
 
-def gerar_relatorio_exel(caminho_arquivo, nome_aba, dados):
+def gerar_relatorio_exel(caminho_arquivo: str, nome_aba: str, dados: list[list]) -> None:
     """
     Abre uma planilha existente, cria uma nova aba e insere os dados.
     
@@ -16,3 +16,5 @@ def gerar_relatorio_exel(caminho_arquivo, nome_aba, dados):
     # Abre a planilha existente com openpyxl (engine necessário para múltiplas abas)
     with pd.ExcelWriter(caminho_arquivo, engine='openpyxl', mode='a', if_sheet_exists='new') as writer:
         df.to_excel(writer, sheet_name=nome_aba, index=False)
+
+

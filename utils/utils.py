@@ -55,23 +55,28 @@ def pegar_valor_json_arquivo(caminho_arquivo, chave, padrao=None):
     return padrao
 
 
-def tela_aviso(titulo, mensagem, tipo):
+def tela_aviso(titulo: str, mensagem: str, tipo: str) -> None:
 
     tipos = {
         "informacao": messagebox.showinfo,
         "erro": messagebox.showerror
     }
     if tipo in tipos.keys():
-        return tipos.get(tipo)(title=titulo, message=mensagem)
+        tipos[tipo](title=titulo, message=mensagem)
+
     texto_no_console([
         f'Tipo de tela não cadastrado na função: {tipo}', 
         f'Tipos cadastrados: {list(tipos.keys())}'])
 
-def converter_int64_para_int(obj):
+def converter_int64_para_int(obj: np.int64 | int) -> int:
     """ Se não for int64 ele retorna o valor original."""
-    if isinstance(obj, np.int64):
+    if isinstance(obj, np.int64): # type: ignore
         return int(obj)
     return obj
 
-def limpar_prompt():
+def limpar_prompt() -> None:
     os.system('cls')
+
+if __name__ == '__main__':
+    tela_aviso('oiii', 'mensagem de teste kskks', tipo='informacao')
+    tela_aviso('oiii', 'mensagem de teste kskks', tipo='erro')
