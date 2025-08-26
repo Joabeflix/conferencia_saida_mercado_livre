@@ -1,4 +1,5 @@
 import os
+import winsound
 import tkinter as tk
 import ttkbootstrap as ttk
 from tkinter import StringVar
@@ -7,6 +8,7 @@ from utils.variaveis_json import *
 from servico_email.servico_de_email import Email
 from tratamento_planilha.gerar_relatorio import gerar_relatorio_exel
 from tratamento_planilha.planilha_romaneio import TratamentoPlanilhaMercadoLivre
+from threading import Thread
 
 class ConferenciaApp:
     def __init__(self, root: ttk.Window) -> None:
@@ -113,13 +115,17 @@ class ConferenciaApp:
                 self.lista_confirmados_gerar_relatorio.append([codigo, self.dados[codigo]["nome_cliente"]])
                 self.label_qtd_confirmada.config(text=f'{self.contagem_confirmado}')
                 self.contagem_confirmado+=1
+
+                winsound.PlaySound(rf'audios\confirmar_pedido.wav', winsound.SND_FILENAME | winsound.SND_ASYNC)
       
             else:
                 self.mensagem(f"⚠️ {codigo} Já conferido", "yellow")
+                winsound.PlaySound(rf'audios\pedido_repetido.wav', winsound.SND_FILENAME | winsound.SND_ASYNC)
           
         else:
             self.mensagem(f"❌ {codigo} não encontrado.", "red")
-
+            winsound.PlaySound(rf'audios\nao_encontrado.wav', winsound.SND_FILENAME | winsound.SND_ASYNC)
+        
 
         self.codigo_var.set("")
         self.atualizar_lista()
