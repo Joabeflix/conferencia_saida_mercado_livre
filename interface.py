@@ -1,14 +1,8 @@
-import os
 import winsound
-import tkinter as tk
 import ttkbootstrap as ttk
 from tkinter import StringVar
-from datetime import datetime
-from utils.variaveis_json import *
-from servico_email.servico_de_email import Email
-from tratamento_planilha.gerar_relatorio import gerar_relatorio_exel
-from tratamento_planilha.planilha_romaneio import TratamentoPlanilhaMercadoLivre
-from threading import Thread
+from utils.variaveis_json import TEMA_PROGRAMA
+from funcoes_interface import adicionar_pedido_avulso, enviar_relatorio_email, gerar_dicionario_dados_vendas
 
 class ConferenciaApp:
     def __init__(self, root: ttk.Window) -> None:
@@ -26,7 +20,10 @@ class ConferenciaApp:
         self.lista_confirmados_gerar_relatorio = []
         self.lista_todos_gerar_relatorio = []
 
-        self.dados = self.carregar_dados()
+        # Passamos o self.local para atribuir o local da planilha la na variável para usar aqui na interface
+        self.dados = gerar_dicionario_dados_vendas(
+            var_local_planilha=self.local_planilha_meli
+        )
 
         self.label_titulo = ttk.Label(root, text="⏳ PENDENTES", font=("Segoe UI", 20, "bold"), foreground="yellow")
         self.label_titulo.place(x=200, y=10)
@@ -59,7 +56,13 @@ class ConferenciaApp:
 
         self.entrada_observacao_email = ttk.Entry(root, width=40)
         self.entrada_observacao_email.place(x=827, y=445)
-        self.gerar_relatorio = ttk.Button(root, text="Enviar Email", style='success-outline', command=self.enviar_relatorio_email)
+        self.gerar_relatorio = ttk.Button(root, text="Enviar Email", style='success-outline', command=lambda: enviar_relatorio_email(
+            local_planilha_meli=self.local_planilha_meli,
+            lista_confirmados=self.lista_confirmados_gerar_relatorio,
+            lista_pendentes=self.lista_pendentes(),
+            observacao_email=self.entrada_observacao_email.get().strip()
+        ))
+
         self.gerar_relatorio.place(x=1086, y=445)
 
         self.label_mensagem = ttk.Label(root, text="", font=("Segoe UI", 10), foreground="blue")
@@ -68,25 +71,12 @@ class ConferenciaApp:
         self.label_log = ttk.Label(root, text="LOG", font=("Segoe UI", 15), foreground="pink")
         self.label_log.place(x=20, y=520)
 
-        self.botao_pedido_avulso = ttk.Button(root, text="Adicionar", style="success", command=self.adicionar_pedido_avulso)
+        self.botao_pedido_avulso = ttk.Button(root, text="Adicionar", style="success", command=lambda: adicionar_pedido_avulso(
+            dados=self.dados,
+            funcao_atualizar_lista=self.atualizar_lista
+        ))
         self.botao_pedido_avulso.place(x=20, y=20)
-
-        # self.label_qtd_faltando = ttk.Label(root, text="", font=("Segoe UI", 10), foreground="blue")
-        # self.label_qtd_faltando.place()
-
         self.atualizar_lista()
-
-    def carregar_dados(self) -> dict:
-        app = TratamentoPlanilhaMercadoLivre(
-            nome_aba_cod_rastreiro=COLUNA_COD_RASTREIO,
-            nome_aba_nome_cliente=COLUNA_NOME_CLIENTE)
-        dicionario = app._criar_dicionario()
-        
-        self.local_planilha_meli = app.retornar_local_planilha()
-
-        return dicionario
-    
-
 
     def atualizar_lista(self) -> None:
         self.bloco_pendentes.delete("1.0", "end")
@@ -133,41 +123,6 @@ class ConferenciaApp:
         if all(info["status_conferencia"] for info in self.dados.values()):
             self.mensagem("✅ Todos os itens foram conferidos com sucesso!", "green")
 
-    def adicionar_pedido_avulso(self) -> None:
-    #    # dicionario[12345678910] = {'nome_cliente': nome_cliente, 'status_conferencia': False}
-    #     print(self.dados)
-    #     print(self.dados)
-    #     self.atualizar_lista()
-        def fechar(root: tk.Tk) -> None:
-            root.destroy()
-        def confirmar() -> None:
-            if cod_rastreio.get() and nome_cliente.get():
-                self.dados[cod_rastreio.get()] = {'nome_cliente': nome_cliente.get(), 'status_conferencia': False}
-                self.atualizar_lista()
-                fechar(tela)
-            else:
-                fechar(tela)
-
-        tela = tk.Tk()
-        tela.title("Ad Pedido")
-        tela.geometry("250x135")
-        label_1 = tk.Label(tela, text="Código de Rastreio")
-        label_1.pack()
-        cod_rastreio = tk.Entry(tela)
-        cod_rastreio.pack()       
-        label_2 = tk.Label(tela, text="Nome do cliente")
-        label_2.pack()
-        nome_cliente = tk.Entry(tela)
-        nome_cliente.pack()
-        espaco = tk.Label(tela, text="ll")
-        espaco.pack()
-        botao_confirmar = tk.Button(tela, text="Adicionar", command=confirmar)
-        botao_confirmar.pack()
-        
-        tela.mainloop()
-
-            
-
     def mensagem(self, texto: str, cor: str) -> None:
         self.label_mensagem.config(text=texto, foreground=cor)
         self.criar_label_log(texto=texto, cor=cor)
@@ -199,42 +154,6 @@ class ConferenciaApp:
         if pendentes:
             return pendentes
         
-    def enviar_relatorio_email(self) -> None:
-        gerar_relatorio_exel(rf'{self.local_planilha_meli}', nome_aba='Confirmados', dados=self.lista_confirmados_gerar_relatorio)
-        email = Email(
-            remetente=REMETENTE
-        )
-        email.definir_senha(SENHA_DE_APP_EMAIL)
-
-        lista_pendentes = self.lista_pendentes()
-        
-
-
-        data_hora = datetime.now()
-
-        data_hora_formatada = data_hora.strftime("%d-%m-%Y %H:%M:%S")
-
-        observacao = self.entrada_observacao_email.get().strip()
-
-        mensagem = f"""
-Lista de pedidos confirmados no Mercado Livre.\n
-DATA E HORA DO ENVIO: {data_hora_formatada}\n
-{f'Pedidos não confirmados:\n{lista_pendentes}' if lista_pendentes else ''}\n
-{f'Observação:\n{observacao}' if observacao  else 'Sem observações.'}
-
-------------------------------------------------------------
-USUÁRIO: {os.environ['USERNAME']}
-NOME DO COMPUTADOR: {os.environ['COMPUTERNAME']}
-------------------------------------------------------------
-        """
-
-        email.enviar(
-            assunto="Relatório pedidos confirmados",
-            mensagem=mensagem,
-            destinatarios=DESTINATARIOS,
-            anexos=[rf'{self.local_planilha_meli}']
-        )
-
 if __name__ == "__main__":
     root = ttk.Window(themename=TEMA_PROGRAMA)
     app = ConferenciaApp(root)

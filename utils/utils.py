@@ -1,8 +1,7 @@
+import os
 import json
 import numpy as np
-import os
 from tkinter import messagebox
-import re
 
 def texto_no_console(obj):
     separadores = ['_', '*', '-', '#']

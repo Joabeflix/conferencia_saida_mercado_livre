@@ -1,6 +1,6 @@
 import pandas as pd
-from utils.utils import texto_no_console
 from tkinter import filedialog, Tk
+from utils.utils import texto_no_console
 
 class TratamentoPlanilhaMercadoLivre:
     def __init__(self, nome_aba_cod_rastreiro: str, nome_aba_nome_cliente: str):
@@ -21,8 +21,7 @@ class TratamentoPlanilhaMercadoLivre:
         
 
 
-    def _criar_dicionario(self):
-        
+    def criar_dicionario(self):
         dicionario = {}
 
         for cod_rastreio, nome_cliente in zip(self.lista_cod_rastreio, self.lista_nome_cliente):
